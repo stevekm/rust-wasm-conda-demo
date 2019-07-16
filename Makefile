@@ -60,19 +60,21 @@ test:
 	which npm
 # which rustup
 
-
-generate:
+wasm-game-of-life:
 	cargo generate --git https://github.com/rustwasm/wasm-pack-template --name wasm-game-of-life
-
+	cd wasm-game-of-life && \
+	wasm-pack build && \
+	npm init wasm-app www && \
+	cat www/package.json | perl -pe  's|(^.*"devDependencies".*)|\1\n"wasm-game-of-life": "file:../pkg",\n|g' > tmp && mv tmp www/package.json && \
+	cat www/index.js | sed 's|hello-wasm-pack|wasm-game-of-life|g' > tmp && mv tmp www/index.js && \
+	cd www && npm install
 build: wasm-game-of-life
-	cd wasm-game-of-life && wasm-pack build
 
-python:
-	python
+run:
+	cd wasm-game-of-life/www && \
+	npm run start
 
+
+# for testing
 bash:
 	bash
-
-CMD:=
-cmd:
-$(CMD)
