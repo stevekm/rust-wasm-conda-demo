@@ -2,11 +2,16 @@
 SHELL:=/bin/bash
 # get system information; Mac (Darwin) or Linux
 UNAME:=$(shell uname)
-PATH:=$(CURDIR)/conda/bin:$(PATH)
+
+# Conda environment
+export PATH:=$(CURDIR)/conda/bin:$(PATH)
 unexport PYTHONPATH
 unexport PYTHONHOME
+
+# Rust environment
 export CARGO_HOME:=$(CURDIR)/.cargo
-export RUSTUP_HOME:=$(CURDIR)/.multirust
+export PATH:=$(CARGO_HOME)/bin:$(PATH)
+# export RUSTUP_HOME:=$(CURDIR)/.rust
 
 ifeq ($(UNAME), Darwin)
 CONDASH:=Miniconda3-4.5.4-MacOSX-x86_64.sh
@@ -26,21 +31,47 @@ conda:
 
 conda-install: conda
 	conda install -y -c conda-forge \
-	nodejs=11.14.0  \
-	rust=1.36.0 && \
+	conda=4.5.4 \
+	nodejs=11.14.0 \
+	rust=1.36.0
+
+cargo-install: conda
 	cargo install wasm-pack cargo-generate
 
+# https://rustwasm.github.io/wasm-pack/book/prerequisites/non-rustup-setups.html
+RUST_SYSROOT:=$(CURDIR)/conda/lib/rustlib/
+WASM32_LIB:=$(RUST_SYSROOT)/wasm32-unknown-unknown
+$(WASM32_LIB):
+	wget https://static.rust-lang.org/dist/rust-std-1.36.0-wasm32-unknown-unknown.tar.gz && \
+	tar -xvzf rust-std-1.36.0-wasm32-unknown-unknown.tar.gz && \
+	rm -f rust-std-1.36.0-wasm32-unknown-unknown.tar.gz && \
+	mv rust-std-1.36.0-wasm32-unknown-unknown/rust-std-wasm32-unknown-unknown/lib/rustlib/wasm32-unknown-unknown "$(RUST_SYSROOT)" && \
+	rm -rf rust-std-1.36.0-wasm32-unknown-unknown
+wasm32: $(WASM32_LIB)
+
+install: conda-install cargo-install wasm32
+
 test:
+	which rustc
+	rustc --version
+	rustc --print sysroot
 	which cargo
-	which npm
-	which rustup
 	which wasm-pack
+	which npm
+# which rustup
+
 
 generate:
 	cargo generate --git https://github.com/rustwasm/wasm-pack-template --name wasm-game-of-life
 
+build: wasm-game-of-life
+	cd wasm-game-of-life && wasm-pack build
+
 python:
 	python
+
+bash:
+	bash
 
 CMD:=
 cmd:
