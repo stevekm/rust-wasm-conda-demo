@@ -35,8 +35,15 @@ conda-install: conda
 	nodejs=11.14.0 \
 	rust=1.36.0
 
-cargo-install: conda
-	cargo install wasm-pack cargo-generate
+$(CARGO_HOME)/bin/cargo-generate:
+	cargo install cargo-generate
+$(CARGO_HOME)/bin/wasm-pack:
+	cargo install wasm-pack
+$(CARGO_HOME)/bin/wasm-bindgen:
+	cargo install wasm-bindgen-cli
+# --git https://github.com/rustwasm/wasm-bindgen.git
+
+cargo-install: conda $(CARGO_HOME)/bin/wasm-bindgen $(CARGO_HOME)/bin/wasm-pack $(CARGO_HOME)/bin/cargo-generate
 
 # https://rustwasm.github.io/wasm-pack/book/prerequisites/non-rustup-setups.html
 RUST_SYSROOT:=$(CURDIR)/conda/lib/rustlib/
@@ -74,6 +81,12 @@ run:
 	cd wasm-game-of-life/www && \
 	npm run start
 
+no-bundler:
+	git clone https://github.com/rustwasm/wasm-bindgen.git && \
+	export RUST_BACKTRACE=1 && \
+	cd wasm-bindgen/examples/without-a-bundler && \
+	wasm-pack build --target web && \
+	open index.html
 
 # for testing
 bash:
